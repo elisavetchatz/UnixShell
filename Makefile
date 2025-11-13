@@ -8,3 +8,5 @@ tinyshell: tinyshell.c
 
 clean:
 	rm -f tinyshell
+
+.PHONY: all clean
