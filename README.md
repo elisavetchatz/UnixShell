@@ -49,14 +49,22 @@ gcc -Wall -Wextra -g tinyshell.c -o tinyshell
 
 ## Example Usage
 ```bash
-tinyshell> ls
+tinyshell:/home/user> ls
 [exit status: 0]
 
-tinyshell> echo hello
-hello
+tinyshell:/home/user> cd /tmp
+
+tinyshell:/tmp> pwd
+/tmp
 [exit status: 0]
 
-tinyshell> /bin/false
-[exit status: 1]
+tinyshell:/tmp> help
+TinyShell - Built-in commands:
+ exit [code] Exit the shell with optional code
+ cd [dir] Change directory (default: HOME)
+ help Show this help message
 
-tinyshell> exit
+All other commands are executed via PATH search.
+
+tinyshell:/tmp> exit
+```

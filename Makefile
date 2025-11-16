@@ -1,3 +1,5 @@
+# Makefile for TinyShell
+
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 
