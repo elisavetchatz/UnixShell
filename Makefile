@@ -3,8 +3,8 @@ CFLAGS = -Wall -Wextra -g
 
 all: tinyshell
 
-tinyshell: tinyshell.c
-	$(CC) $(CFLAGS) tinyshell.c -o tinyshell
+tinyshell: tinyShell.c
+	$(CC) $(CFLAGS) tinyShell.c -o tinyShell
 
 clean:
 	rm -f tinyshell
