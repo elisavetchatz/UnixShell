@@ -11,6 +11,12 @@ extern char **environ;
 
 #define MAX_ARGS 128
 
+// ANSI color codes
+#define COLOR_RESET   "\033[0m"
+#define COLOR_RED     "\033[1;31m"
+#define COLOR_BLUE    "\033[1;34m"
+#define COLOR_CYAN    "\033[1;36m"
+
 // Simple parsing: separates the line into tokens (space/tab/newline)
 static int parse_line(char *line, char **argv) {
     int argc = 0;
@@ -66,7 +72,7 @@ int main(void) {
 
     while (1) {
         // Prompt
-        printf("tinyshell> ");
+        printf("%stinyshell>%s ", COLOR_CYAN, COLOR_RESET);
         fflush(stdout);
 
         // EOF handling
@@ -112,10 +118,10 @@ int main(void) {
             }
             if (WIFEXITED(status)) {
                 int code = WEXITSTATUS(status);
-                printf("[exit status: %d]\n", code);
+                printf("%s[exit status: %d]%s\n", COLOR_BLUE, code, COLOR_RESET);
             } else if (WIFSIGNALED(status)) {
                 int sig = WTERMSIG(status);
-                printf("[terminated by signal: %d]\n", sig);
+                printf("%s[terminated by signal: %d]%s\n", COLOR_BLUE, sig, COLOR_RESET);
             }
         }
     }
