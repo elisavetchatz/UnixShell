@@ -11,7 +11,7 @@ extern char **environ;
 
 #define MAX_ARGS 128
 
-// Απλό parsing: κόβει τη γραμμή σε tokens (space/tab/newline)
+// Simple parsing: separates the line into tokens (space/tab/newline)
 static int parse_line(char *line, char **argv) {
     int argc = 0;
     char *tok = strtok(line, " \t\r\n");
@@ -23,9 +23,9 @@ static int parse_line(char *line, char **argv) {
     return argc;
 }
 
-// Εκτέλεση με χειροκίνητο PATH search + execve
+// Execution with manual PATH search + execve
 static void exec_with_path(char *cmd, char **argv) {
-    // Αν περιέχει '/', δοκίμασε απευθείας
+    // If it contains '/', try directly
     if (strchr(cmd, '/')) {
         execve(cmd, argv, environ);
         perror("execve");
@@ -65,35 +65,35 @@ int main(void) {
     size_t cap = 0;
 
     while (1) {
-        // 1) Prompt
+        // Prompt
         printf("tinyshell> ");
         fflush(stdout);
 
-        // EOF → τερματισμός "ήσυχα"
+        // EOF handling
         ssize_t n = getline(&line, &cap, stdin);
         if (n == -1) {
             printf("\n");
             break;
         }
 
-        // Αγνόησε κενές γραμμές
+        // Ignore empty lines
         if (n <= 1) continue;
 
-        // 2) Parsing
+        // Parsing
         char *argv[MAX_ARGS];
         int argc = parse_line(line, argv);
         if (argc == 0) continue;
 
-        // 6) Built-in: exit
+        // Built-in: exit
         if (strcmp(argv[0], "exit") == 0) {
-            // προαιρετικά: exit με status, π.χ. "exit 3"
+            // optionally: exit with status
             int code = 0;
             if (argc >= 2) code = atoi(argv[1]);
             free(line);
             return code;
         }
 
-        // 4) fork + execve
+        // Fork + execve
         pid_t pid = fork();
         if (pid < 0) {
             perror("fork");
@@ -104,7 +104,7 @@ int main(void) {
             exec_with_path(argv[0], argv);
             _exit(127); // safety
         } else {
-            // parent: 5) περίμενε και ανάφερε κωδικό εξόδου
+            // parent: Wait and report parent status
             int status;
             if (waitpid(pid, &status, 0) == -1) {
                 perror("waitpid");
