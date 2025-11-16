@@ -92,7 +92,7 @@ int main(void) {
         // Prompt with current directory
         char cwd[PATH_MAX_LEN];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
-            printf("%stinyshell:%s%s ", COLOR_CYAN, cwd, COLOR_RESET);
+            printf("%stinyshell:%s%s> ", COLOR_CYAN, cwd, COLOR_RESET);
         } else {
             printf("%stinyshell>%s ", COLOR_CYAN, COLOR_RESET);
         }
