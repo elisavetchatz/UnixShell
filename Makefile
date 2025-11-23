@@ -1,3 +1,5 @@
+# Makefile for TinyShell
+
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 
@@ -8,3 +10,5 @@ tinyshell: tinyshell.c
 
 clean:
 	rm -f tinyshell
+
+.PHONY: all clean
