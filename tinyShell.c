@@ -24,6 +24,10 @@
 #define MAX_CMDS 64
 #define PATH_MAX_LEN 1024
 
+// Pipe ends for readability
+#define PIPE_READ  0
+#define PIPE_WRITE 1
+
 extern char **environ;
 
 // Forward declarations
@@ -379,7 +383,7 @@ static void execute_pipeline(Command cmds[], int num_cmds)
             // Redirect input from previous pipe (if not first command)
             if (i > 0) 
             {
-                if (dup2(pipefds[(i - 1) * 2], STDIN_FILENO) < 0) 
+                if (dup2(pipefds[(i - 1) * 2 + PIPE_READ], STDIN_FILENO) < 0) 
                 {
                     perror("dup2");
                     _exit(1);
@@ -389,7 +393,7 @@ static void execute_pipeline(Command cmds[], int num_cmds)
             // Redirect output to next pipe (if not last command)
             if (i < num_cmds - 1) 
             {
-                if (dup2(pipefds[i * 2 + 1], STDOUT_FILENO) < 0) 
+                if (dup2(pipefds[i * 2 + PIPE_WRITE], STDOUT_FILENO) < 0) 
                 {
                     perror("dup2");
                     _exit(1);
@@ -400,9 +404,8 @@ static void execute_pipeline(Command cmds[], int num_cmds)
             for (int j = 0; j < 2 * (num_cmds - 1); j++) 
                 close(pipefds[j]);
             
-            // Set up output redirection if this is the last command
-            if (i == num_cmds - 1) 
-                setup_redirection(&cmds[i]);
+            // Set up file redirections (applied AFTER pipe setup)
+            setup_redirection(&cmds[i]);
             
             // Execute command
             exec_with_path(cmds[i].argv[0], cmds[i].argv);

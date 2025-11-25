@@ -1,4 +1,6 @@
+append
+existing content
+other line
 test line 1
 test line 2
-other line
 test line 3
