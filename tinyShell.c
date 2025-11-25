@@ -36,7 +36,8 @@ static void builtin_cd(int argc, char **argv);
 static void builtin_help(void);
 
 // Command structure for pipeline
-typedef struct {
+typedef struct 
+{
     char *argv[MAX_ARGS];  // Arguments for this command
     int argc;               // Number of arguments
     char *infile;          // Input redirection filename (NULL if none)
