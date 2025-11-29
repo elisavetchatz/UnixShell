@@ -38,12 +38,12 @@ static void builtin_help(void);
 // Command structure for pipeline
 typedef struct 
 {
-    char *argv[MAX_ARGS];  // Arguments for this command
-    int argc;               // Number of arguments
-    char *infile;          // Input redirection filename (NULL if none)
-    char *outfile;         // Output redirection filename (NULL if none)
-    char *errfile;         // Stderr redirection filename (NULL if none)
-    int append;            // 1 for >>, 0 for >
+    char *argv[MAX_ARGS]; // Arguments for this command
+    int argc; // Number of arguments
+    char *infile; // Input redirection filename (NULL if none)
+    char *outfile; // Output redirection filename (NULL if none)
+    char *errfile; // Stderr redirection filename (NULL if none)
+    int append; // 1 for >>, 0 for >
 } Command;
 
 // Parse a single command, checking for redirections (<, >, >>, 2>)
@@ -78,6 +78,7 @@ static void parse_command(char *input, Command *cmd)
                 if (*pos) *pos++ = '\0';
             }
         }
+
         else if (pos[0] == '>' && pos[1] == '>') 
         {
             // Append redirection
@@ -114,6 +115,7 @@ static void parse_command(char *input, Command *cmd)
                 if (*pos) *pos++ = '\0';
             }
         }
+
         else if (*pos == '<') 
         {
             // Input redirection
@@ -131,6 +133,7 @@ static void parse_command(char *input, Command *cmd)
                 if (*pos) *pos++ = '\0';
             }
         }
+        
         else 
         {
             pos++;
