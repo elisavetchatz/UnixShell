@@ -4,20 +4,14 @@
 
 TinyShell is a small, educational Unix shell that implements core features of a modern command-line interpreter. Phase 2 adds input/output redirection and pipes for complex command processing.
 
-**Features:**
-- I/O redirection (>, >>, <, 2>)
-- Pipes and pipeline chains
-- PATH resolution
-- Built-in commands
-
 ## Requirements
-- Linux ή **WSL/Ubuntu** in Windows
+- Linux or **WSL/Ubuntu** in Windows
 - GCC & build tools  
   Install on Ubuntu/WSL:
   ```bash
   sudo apt update
   sudo apt install -y build-essential
-    ```
+  ```
 
 ## Build and Run
 
@@ -37,7 +31,6 @@ make run            # Build + run
 
 ### Phase 1 (Basic Shell)
 1. **Dynamic prompt** — Shows current directory: `tinyshell:/path/to/dir`
-2. **Colored output** — Cyan prompt, blue exit status, red errors
 3. **Command parsing** — Tokenizes input using space/tab/newline delimiters
 4. **PATH resolution** — Automatically locates executables in PATH directories
 5. **Process execution** — Uses `fork()` + `execve()` for command execution
@@ -68,7 +61,7 @@ tinyshell:/home/user> help
 TinyShell - Built-in commands:
  exit [code] Exit the shell with optional code
  cd [dir] Change directory (default: HOME)
- help Show this help message
+ help Show this message
 ```
 
 ### I/O Redirection
@@ -103,21 +96,19 @@ tinyshell:/home/user> cat file.txt | grep "error" | sort | uniq
 error line 1
 error line 2
 [exit status: 0]
+```
 
 ### Combined: pipes + redirections
+```bash
 tinyshell:/home/user> cat < input.txt | grep "test" | sort > output.txt
 [exit status: 0]
 ```
 
 ### **File Descriptor Management:**
 
-```
-stdin  (0) → [COMMAND] → stdout (1)
-                ↓
-            stderr (2)
-```
+![File Descriptor Diagram](FIleManagement.png)
 
-**With redirections:**
+**Implementation with redirections:**
 ```c
 // Input: cat < file.txt
 open("file.txt", O_RDONLY) → fd=3
@@ -130,7 +121,7 @@ dup2(3, 1)  // stdout now writes to out.txt
 close(3)
 ```
 
-**With pipes:**
+**Implementation with pipes:**
 ```c
 // ls | wc -l
 pipe(pipefd)  // pipefd[0]=read, pipefd[1]=write
