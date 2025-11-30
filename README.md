@@ -6,11 +6,12 @@ TinyShell is a small, educational Unix shell that implements core features of a 
 
 ## Requirements
 - Linux or **WSL/Ubuntu** in Windows
-- GCC & build tools  
+  - GCC & build tools
+  - GNU Readline library (for command history)
   Install on Ubuntu/WSL:
   ```bash
   sudo apt update
-  sudo apt install -y build-essential
+  sudo apt install -y build-essential libreadline-dev
   ```
 
 ## Build and Run
@@ -31,6 +32,7 @@ make run            # Build + run
 
 ### Phase 1 (Basic Shell)
 1. **Dynamic prompt** — Shows current directory: `tinyshell:/path/to/dir`
+2. **Command history & line editing** — Use up/down arrows to recall previous commands (powered by GNU Readline)
 3. **Command parsing** — Tokenizes input using space/tab/newline delimiters
 4. **PATH resolution** — Automatically locates executables in PATH directories
 5. **Process execution** — Uses `fork()` + `execve()` for command execution
@@ -107,33 +109,6 @@ tinyshell:/home/user> cat < input.txt | grep "test" | sort > output.txt
 ### **File Descriptor Management:**
 
 ![File Descriptor Diagram](FIleManagement.png)
-
-**Implementation with redirections:**
-```c
-// Input: cat < file.txt
-open("file.txt", O_RDONLY) → fd=3
-dup2(3, 0)  // stdin now reads from file.txt
-close(3)
-
-// Output: ls > out.txt
-open("out.txt", O_WRONLY|O_CREAT|O_TRUNC) → fd=3
-dup2(3, 1)  // stdout now writes to out.txt
-close(3)
-```
-
-**Implementation with pipes:**
-```c
-// ls | wc -l
-pipe(pipefd)  // pipefd[0]=read, pipefd[1]=write
-
-fork() → child1:
-  dup2(pipefd[1], 1)  // stdout → pipe write
-  exec("ls")
-
-fork() → child2:
-  dup2(pipefd[0], 0)  // stdin ← pipe read
-  exec("wc")
-```
 
 ### **System Calls Used:**
 

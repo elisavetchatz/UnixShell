@@ -3,7 +3,7 @@
 
 CC = gcc
 CFLAGS = -Wall -Wextra -g -Iinclude
-LDFLAGS =
+LDFLAGS = -lreadline
 
 SRC_DIR = src
 INC_DIR = include
