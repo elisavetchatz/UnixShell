@@ -28,6 +28,21 @@ make clean          # Remove build artifacts
 make rebuild        # Clean + build
 make run            # Build + run
 ```
+
+### Build Process Overview
+
+When you run `make`, the following steps occur:
+
+1. **Create the `obj` directory**
+   - If it does not exist, `make` creates an `obj/` directory to store object files.
+2. **Compile source files**
+   - Each `.c` file in `src/` is compiled into an object file (`.o`) in `obj/`.
+   - For example, `src/main.c` becomes `obj/main.o`.
+3. **Link object files**
+   - All object files in `obj/` are linked together to produce the final executable: `tinyshell`.
+4. **Clean build artifacts**
+   - Running `make clean` removes the `obj/` directory and the `tinyshell` binary, leaving only your source and header files.
+
 ## Features
 
 ### Phase 1 (Basic Shell)
@@ -108,7 +123,7 @@ tinyshell:/home/user> cat < input.txt | grep "test" | sort > output.txt
 
 ### **File Descriptor Management:**
 
-![File Descriptor Diagram](FIleManagement.png)
+![File Descriptor Diagram](FileDesc.png)
 
 ### **System Calls Used:**
 
