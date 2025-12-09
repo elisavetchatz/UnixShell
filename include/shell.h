@@ -30,13 +30,28 @@
 // Command structure for pipeline
 typedef struct 
 {
-    char *argv[MAX_ARGS];   // Arguments for this command
-    int argc;                // Number of arguments
-    char *infile;           // Input redirection filename (NULL if none)
-    char *outfile;          // Output redirection filename (NULL if none)
-    char *errfile;          // Stderr redirection filename (NULL if none)
-    int append;             // 1 for >>, 0 for >
+    char *argv[MAX_ARGS]; // Arguments for this command
+    int argc; // Number of arguments
+    char *infile; // Input redirection filename (NULL if none)
+    char *outfile; // Output redirection filename (NULL if none)
+    char *errfile; // Stderr redirection filename (NULL if none)
+    int append; // 1 for >>, 0 for >
+    int background; // 1 if command should run in background (&)
 } Command;
+
+// Job structure for background job tracking
+typedef struct 
+{
+    int job_num; // Job number
+    pid_t pid; // Process ID
+    char *cmd_line; // Command line string
+    int running; // 1 if still running, 0 if completed
+} Job;
+
+// Global job tracking (defined in executor.c)
+#define MAX_JOBS 64
+extern Job jobs[MAX_JOBS];
+extern int next_job_num;
 
 extern char **environ;
 

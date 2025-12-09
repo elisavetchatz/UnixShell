@@ -5,6 +5,27 @@
 #include "../include/executor.h"
 #include "../include/builtins.h"
 
+// Global job tracking
+Job jobs[MAX_JOBS];
+int next_job_num = 1;
+
+// Add a background job to the jobs list
+static int add_job(pid_t pid, const char *cmd_line) 
+{
+    for (int i = 0; i < MAX_JOBS; i++) 
+    {
+        if (!jobs[i].running) 
+        {
+            jobs[i].job_num = next_job_num++;
+            jobs[i].pid = pid;
+            jobs[i].cmd_line = strdup(cmd_line);
+            jobs[i].running = 1;
+            return jobs[i].job_num;
+        }
+    }
+    return -1;  // No space for more jobs
+}
+
 // Execution with manual PATH search + execve
 void exec_with_path(const char *cmd, char **argv) 
 {
@@ -169,15 +190,42 @@ void execute_pipeline(Command cmds[], int num_cmds)
         if (pid == 0) 
         {
             // Child process
+            // Create new process group for background jobs
+            if (cmds[0].background) 
+            {
+                setpgid(0, 0);
+            }
+            
             setup_redirection(&cmds[0]);
             exec_with_path(cmds[0].argv[0], cmds[0].argv);
         } 
         else 
         {
             // Parent process
-            int status;
-            waitpid(pid, &status, 0);
-            print_exit_status(status);
+            if (cmds[0].background) 
+            {
+                // Background job - don't wait
+                setpgid(pid, pid);  // Put child in its own process group
+                
+                // Add to job list and print job info
+                char cmd_str[256];
+                snprintf(cmd_str, sizeof(cmd_str), "%s", cmds[0].argv[0]);
+                for (int i = 1; i < cmds[0].argc && i < 10; i++) 
+                {
+                    strncat(cmd_str, " ", sizeof(cmd_str) - strlen(cmd_str) - 1);
+                    strncat(cmd_str, cmds[0].argv[i], sizeof(cmd_str) - strlen(cmd_str) - 1);
+                }
+                
+                int job_num = add_job(pid, cmd_str);
+                printf("[%d] %d\n", job_num, pid);
+            } 
+            else 
+            {
+                // Foreground job - wait for completion
+                int status;
+                waitpid(pid, &status, 0);
+                print_exit_status(status);
+            }
         }
         return;
     }
@@ -246,12 +294,38 @@ void execute_pipeline(Command cmds[], int num_cmds)
     for (int i = 0; i < 2 * (num_cmds - 1); i++) 
         close(pipefds[i]);
     
-    // Wait for all children
-    int status;
-    for (int i = 0; i < num_cmds; i++) 
+    // Check if the last command in pipeline is background
+    int is_background = cmds[num_cmds - 1].background;
+    
+    if (is_background) 
     {
-        waitpid(pids[i], &status, 0);
-        if (i == num_cmds - 1)  // Only print status of last command
-            print_exit_status(status);
+        // Background pipeline - don't wait
+        // Put all processes in same process group (first child's PID)
+        for (int i = 0; i < num_cmds; i++) 
+        {
+            setpgid(pids[i], pids[0]);
+        }
+        
+        // Add the pipeline as a job (use last PID as representative)
+        char cmd_str[256] = "";
+        for (int i = 0; i < num_cmds && strlen(cmd_str) < 200; i++) 
+        {
+            if (i > 0) strncat(cmd_str, " | ", sizeof(cmd_str) - strlen(cmd_str) - 1);
+            strncat(cmd_str, cmds[i].argv[0], sizeof(cmd_str) - strlen(cmd_str) - 1);
+        }
+        
+        int job_num = add_job(pids[num_cmds - 1], cmd_str);
+        printf("[%d] %d\n", job_num, pids[num_cmds - 1]);
+    } 
+    else 
+    {
+        // Foreground pipeline - wait for all children
+        int status;
+        for (int i = 0; i < num_cmds; i++) 
+        {
+            waitpid(pids[i], &status, 0);
+            if (i == num_cmds - 1)  // Only print status of last command
+                print_exit_status(status);
+        }
     }
 }

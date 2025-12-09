@@ -14,6 +14,13 @@
 int main(void) 
 {
     char *line = NULL;
+    
+    // Initialize job tracking
+    for (int i = 0; i < MAX_JOBS; i++) 
+    {
+        jobs[i].running = 0;
+        jobs[i].cmd_line = NULL;
+    }
 
     while (1)
     {
