@@ -4,6 +4,7 @@
 
 #include "../include/executor.h"
 #include "../include/builtins.h"
+#include <signal.h>
 
 // Global job tracking
 Job jobs[MAX_JOBS];
@@ -189,6 +190,14 @@ void execute_pipeline(Command cmds[], int num_cmds)
         
         if (pid == 0) 
         {
+            // Restore SIGINT and SIGTSTP to default
+            struct sigaction sa;
+            sa.sa_handler = SIG_DFL;
+            sigemptyset(&sa.sa_mask);
+            sa.sa_flags = 0;
+            sigaction(SIGINT, &sa, NULL);
+            sigaction(SIGTSTP, &sa, NULL);
+
             // Child process
             // Create new process group for background jobs
             if (cmds[0].background) 
@@ -223,8 +232,14 @@ void execute_pipeline(Command cmds[], int num_cmds)
             {
                 // Foreground job - wait for completion
                 int status;
-                waitpid(pid, &status, 0);
-                print_exit_status(status);
+                waitpid(pid, &status, WUNTRACED);
+                if (WIFSTOPPED(status)) {
+                    // Job was stopped (SIGTSTP)
+                    int job_num = add_job(pid, cmds[0].argv[0]);
+                    printf("[%d]+ Stopped    %s\n", job_num, cmds[0].argv[0]);
+                } else {
+                    print_exit_status(status);
+                }
             }
         }
         return;
@@ -257,7 +272,14 @@ void execute_pipeline(Command cmds[], int num_cmds)
         if (pids[i] == 0) 
         {
             // Child process
-            
+            // Restore SIGINT and SIGTSTP to default
+            struct sigaction sa;
+            sa.sa_handler = SIG_DFL;
+            sigemptyset(&sa.sa_mask);
+            sa.sa_flags = 0;
+            sigaction(SIGINT, &sa, NULL);
+            sigaction(SIGTSTP, &sa, NULL);
+
             // Redirect input from previous pipe (if not first command)
             if (i > 0) 
             {
@@ -267,7 +289,7 @@ void execute_pipeline(Command cmds[], int num_cmds)
                     _exit(1);
                 }
             }
-            
+
             // Redirect output to next pipe (if not last command)
             if (i < num_cmds - 1) 
             {
@@ -277,14 +299,14 @@ void execute_pipeline(Command cmds[], int num_cmds)
                     _exit(1);
                 }
             }
-            
+
             // Close all pipe file descriptors
             for (int j = 0; j < 2 * (num_cmds - 1); j++) 
                 close(pipefds[j]);
-            
+
             // Set up file redirections (applied AFTER pipe setup)
             setup_redirection(&cmds[i]);
-            
+
             // Execute command
             exec_with_path(cmds[i].argv[0], cmds[i].argv);
         }

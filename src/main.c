@@ -10,9 +10,18 @@
 #include "../include/utils.h"
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <signal.h>
 
 int main(void) 
 {
+    // Ignore SIGINT and SIGTSTP in shell
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
+
     char *line = NULL;
     
     // Initialize job tracking
