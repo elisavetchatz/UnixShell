@@ -123,7 +123,7 @@ tinyshell:/home/user> cat < input.txt | grep "test" | sort > output.txt
 
 ### **File Descriptor Management:**
 
-![File Descriptor Diagram](FileDesc.png)
+![File Descriptor Diagram](docs\FileDesc.png)
 
 ### **System Calls Used:**
 

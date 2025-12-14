@@ -14,6 +14,20 @@
 
 int main(void) 
 {
+    // Setup shell for job control
+    shell_terminal = STDIN_FILENO;
+    shell_pgid = getpid();
+    
+    // Put shell in its own process group
+    if (setpgid(shell_pgid, shell_pgid) < 0) 
+    {
+        perror("setpgid");
+        exit(1);
+    }
+    
+    // Take control of the terminal
+    tcsetpgrp(shell_terminal, shell_pgid);
+    
     // Ignore SIGINT and SIGTSTP in shell
     struct sigaction sa;
     sa.sa_handler = SIG_IGN;
@@ -21,13 +35,15 @@ int main(void)
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTSTP, &sa, NULL);
+    // Also ignore SIGTTOU (terminal output for background process)
+    sigaction(SIGTTOU, &sa, NULL);
 
     char *line = NULL;
     
     // Initialize job tracking
     for (int i = 0; i < MAX_JOBS; i++) 
     {
-        jobs[i].running = 0;
+        jobs[i].state = JOB_DONE;
         jobs[i].cmd_line = NULL;
     }
 

@@ -9,18 +9,21 @@
 // Global job tracking
 Job jobs[MAX_JOBS];
 int next_job_num = 1;
+pid_t shell_pgid;
+int shell_terminal;
 
 // Add a background job to the jobs list
-static int add_job(pid_t pid, const char *cmd_line) 
+static int add_job(pid_t pid, pid_t pgid, const char *cmd_line) 
 {
     for (int i = 0; i < MAX_JOBS; i++) 
     {
-        if (!jobs[i].running) 
+        if (jobs[i].state == JOB_DONE) 
         {
             jobs[i].job_num = next_job_num++;
             jobs[i].pid = pid;
+            jobs[i].pgid = pgid;
             jobs[i].cmd_line = strdup(cmd_line);
-            jobs[i].running = 1;
+            jobs[i].state = JOB_RUNNING;
             return jobs[i].job_num;
         }
     }
@@ -176,6 +179,21 @@ void execute_pipeline(Command cmds[], int num_cmds)
             builtin_help();
             return;
         }
+        if (strcmp(cmds[0].argv[0], "jobs") == 0) 
+        {
+            builtin_jobs();
+            return;
+        }
+        if (strcmp(cmds[0].argv[0], "fg") == 0) 
+        {
+            builtin_fg(cmds[0].argc, cmds[0].argv);
+            return;
+        }
+        if (strcmp(cmds[0].argv[0], "bg") == 0) 
+        {
+            builtin_bg(cmds[0].argc, cmds[0].argv);
+            return;
+        }
     }
     
     // Single command (possibly with redirection)
@@ -211,11 +229,12 @@ void execute_pipeline(Command cmds[], int num_cmds)
         else 
         {
             // Parent process
+            pid_t pgid = pid;  // Use child's PID as process group ID
+            setpgid(pid, pgid);
+            
             if (cmds[0].background) 
             {
                 // Background job - don't wait
-                setpgid(pid, pid);  // Put child in its own process group
-                
                 // Add to job list and print job info
                 char cmd_str[256];
                 snprintf(cmd_str, sizeof(cmd_str), "%s", cmds[0].argv[0]);
@@ -225,18 +244,33 @@ void execute_pipeline(Command cmds[], int num_cmds)
                     strncat(cmd_str, cmds[0].argv[i], sizeof(cmd_str) - strlen(cmd_str) - 1);
                 }
                 
-                int job_num = add_job(pid, cmd_str);
+                int job_num = add_job(pid, pgid, cmd_str);
                 printf("[%d] %d\n", job_num, pid);
             } 
             else 
             {
-                // Foreground job - wait for completion
+                // Foreground job - give it terminal control
+                tcsetpgrp(shell_terminal, pgid);
+                
+                // Wait for completion or stop
                 int status;
                 waitpid(pid, &status, WUNTRACED);
+                
+                // Take back terminal control
+                tcsetpgrp(shell_terminal, shell_pgid);
+                
                 if (WIFSTOPPED(status)) {
-                    // Job was stopped (SIGTSTP)
-                    int job_num = add_job(pid, cmds[0].argv[0]);
-                    printf("[%d]+ Stopped    %s\n", job_num, cmds[0].argv[0]);
+                    // Job was stopped (Ctrl-Z)
+                    char cmd_str[256];
+                    snprintf(cmd_str, sizeof(cmd_str), "%s", cmds[0].argv[0]);
+                    for (int i = 1; i < cmds[0].argc && i < 10; i++) 
+                    {
+                        strncat(cmd_str, " ", sizeof(cmd_str) - strlen(cmd_str) - 1);
+                        strncat(cmd_str, cmds[0].argv[i], sizeof(cmd_str) - strlen(cmd_str) - 1);
+                    }
+                    int job_num = add_job(pid, pgid, cmd_str);
+                    jobs[job_num - 1].state = JOB_STOPPED;
+                    printf("\n[%d]+  Stopped    %s\n", job_num, cmd_str);
                 } else {
                     print_exit_status(status);
                 }
@@ -323,9 +357,10 @@ void execute_pipeline(Command cmds[], int num_cmds)
     {
         // Background pipeline - don't wait
         // Put all processes in same process group (first child's PID)
+        pid_t pgid = pids[0];
         for (int i = 0; i < num_cmds; i++) 
         {
-            setpgid(pids[i], pids[0]);
+            setpgid(pids[i], pgid);
         }
         
         // Add the pipeline as a job (use last PID as representative)
@@ -336,7 +371,7 @@ void execute_pipeline(Command cmds[], int num_cmds)
             strncat(cmd_str, cmds[i].argv[0], sizeof(cmd_str) - strlen(cmd_str) - 1);
         }
         
-        int job_num = add_job(pids[num_cmds - 1], cmd_str);
+        int job_num = add_job(pids[num_cmds - 1], pgid, cmd_str);
         printf("[%d] %d\n", job_num, pids[num_cmds - 1]);
     } 
     else 
