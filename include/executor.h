@@ -29,4 +29,15 @@ void execute_pipeline(Command cmds[], int num_cmds);
  */
 void print_exit_status(int status);
 
+/**
+ * SIGCHLD signal handler for reaping zombie processes
+ * @param sig: Signal number
+ */
+void sigchld_handler(int sig);
+
+/**
+ * Check for completed jobs and print notifications
+ */
+void check_job_notifications(void);
+
 #endif // EXECUTOR_H

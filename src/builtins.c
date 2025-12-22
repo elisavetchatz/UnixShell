@@ -93,8 +93,19 @@ void builtin_fg(int argc, char **argv)
     // Print what we're foregrounding
     printf("%s\n", job->cmd_line);
     
+    // Block SIGCHLD during critical section
+    sigset_t mask, prev;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &mask, &prev);
+    
     // Give terminal control to the job's process group
-    tcsetpgrp(shell_terminal, job->pgid);
+    if (tcsetpgrp(shell_terminal, job->pgid) < 0)
+    {
+        perror("tcsetpgrp");
+        sigprocmask(SIG_SETMASK, &prev, NULL);
+        return;
+    }
     
     // Send SIGCONT to continue the job if it was stopped
     if (job->state == JOB_STOPPED)
@@ -104,12 +115,21 @@ void builtin_fg(int argc, char **argv)
     
     job->state = JOB_RUNNING;
     
+    // Unblock SIGCHLD
+    sigprocmask(SIG_SETMASK, &prev, NULL);
+    
     // Wait for the job to complete or stop
     int status;
     pid_t result = waitpid(job->pid, &status, WUNTRACED);
     
     // Take back terminal control
-    tcsetpgrp(shell_terminal, shell_pgid);
+    if (tcsetpgrp(shell_terminal, shell_pgid) < 0)
+    {
+        perror("tcsetpgrp");
+    }
+    
+    // Block SIGCHLD while updating job status
+    sigprocmask(SIG_BLOCK, &mask, &prev);
     
     if (result > 0)
     {
@@ -130,6 +150,9 @@ void builtin_fg(int argc, char **argv)
             }
         }
     }
+    
+    // Unblock SIGCHLD
+    sigprocmask(SIG_SETMASK, &prev, NULL);
 }
 
 // Built-in: bg command - continue job in background
@@ -157,10 +180,19 @@ void builtin_bg(int argc, char **argv)
     
     if (job->state == JOB_STOPPED)
     {
+        // Block SIGCHLD during state change
+        sigset_t mask, prev;
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGCHLD);
+        sigprocmask(SIG_BLOCK, &mask, &prev);
+        
         // Send SIGCONT to continue the job in background
         kill(-job->pgid, SIGCONT);
         job->state = JOB_RUNNING;
         printf("[%d]+ %s &\n", job->job_num, job->cmd_line);
+        
+        // Unblock SIGCHLD
+        sigprocmask(SIG_SETMASK, &prev, NULL);
     }
     else
     {
