@@ -13,6 +13,23 @@ void parse_command(char *input, Command *cmd)
     cmd->outfile = NULL;
     cmd->errfile = NULL;
     cmd->append = 0;
+    cmd->background = 0;
+    
+    // Check for & at the end (background execution)
+    char *bg_pos = input;
+    while (*bg_pos) bg_pos++;
+    bg_pos--;
+    
+    // Skip trailing whitespace
+    while (bg_pos > input && (*bg_pos == ' ' || *bg_pos == '\t' || *bg_pos == '\n')) 
+        bg_pos--;
+    
+    // Check if last non-whitespace character is &
+    if (bg_pos > input && *bg_pos == '&') 
+    {
+        cmd->background = 1;
+        *bg_pos = '\0';  // Remove & from command string
+    }
     
     char *cmd_start = input;
     char *pos = input;

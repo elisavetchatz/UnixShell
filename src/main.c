@@ -10,13 +10,55 @@
 #include "../include/utils.h"
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <signal.h>
 
 int main(void) 
 {
+    // Setup shell for job control
+    shell_terminal = STDIN_FILENO;
+    shell_pgid = getpgrp();
+    
+    // Put shell in its own process group
+    if (setpgid(0, shell_pgid) < 0) 
+    {
+        perror("setpgid");
+        exit(1);
+    }
+    
+    // Take control of the terminal
+    tcsetpgrp(shell_terminal, shell_pgid);
+    
+    // Ignore SIGINT, SIGTSTP, SIGTTIN, and SIGTTOU in shell
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
+    sigaction(SIGTTIN, &sa, NULL);  // Ignore terminal input for background
+    sigaction(SIGTTOU, &sa, NULL);  // Ignore terminal output for background
+    
+    // Set up SIGCHLD handler to reap zombie processes
+    struct sigaction sa_chld;
+    sa_chld.sa_handler = sigchld_handler;
+    sigemptyset(&sa_chld.sa_mask);
+    sa_chld.sa_flags = SA_RESTART;  // Restart interrupted system calls
+    sigaction(SIGCHLD, &sa_chld, NULL);
+
     char *line = NULL;
+    
+    // Initialize job tracking
+    for (int i = 0; i < MAX_JOBS; i++) 
+    {
+        jobs[i].state = JOB_DONE;
+        jobs[i].cmd_line = NULL;
+    }
 
     while (1)
     {
+        // Check for completed background jobs and notify user
+        check_job_notifications();
+        
         // Prompt with current directory
         char *cwd = get_current_dir();
         char prompt[PATH_MAX_LEN + 32];

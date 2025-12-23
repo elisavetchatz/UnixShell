@@ -32,14 +32,23 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -f $(TARGET)
 	@echo "Clean complete"
+
 rebuild: clean all
+
+# Aliases for common commands
+build: all
+r: run
+c: clean
+rb: rebuild
+
 show:
 	@echo "Sources: $(SOURCES)"
 	@echo "Objects: $(OBJECTS)"
 	@echo "Headers: $(HEADERS)"
 	@echo "Target: $(TARGET)"
+
 run: $(TARGET)
 	./$(TARGET)
 
 # Phony targets
-.PHONY: all clean rebuild show run
+.PHONY: all clean rebuild show run build r c rb
