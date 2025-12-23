@@ -8,7 +8,7 @@
 
 TinyShell is an educational Unix shell that implements all core features of a modern command-line interpreter, including command execution, I/O redirection, pipelines and comprehensive job control with signal handling. Built from scratch using POSIX system calls and C.
 
-**[> Jump to Quick Start](#-quick-start)**
+**[→ Jump to Quick Start](#quick-start)**
 
 ## Features
 
