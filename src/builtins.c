@@ -119,8 +119,12 @@ void builtin_fg(int argc, char **argv)
     sigprocmask(SIG_SETMASK, &prev, NULL);
     
     // Wait for the job to complete or stop
+    // Retry if interrupted by a signal (EINTR)
     int status;
-    pid_t result = waitpid(job->pid, &status, WUNTRACED);
+    pid_t result;
+    do {
+        result = waitpid(job->pid, &status, WUNTRACED);
+    } while (result == -1 && errno == EINTR);
     
     // Take back terminal control
     if (tcsetpgrp(shell_terminal, shell_pgid) < 0)

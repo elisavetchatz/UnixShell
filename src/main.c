@@ -16,7 +16,7 @@ int main(void)
 {
     // Setup shell for job control
     shell_terminal = STDIN_FILENO;
-    shell_pgid = getpid();
+    shell_pgid = getpgrp();
     
     // Put shell in its own process group
     if (setpgid(shell_pgid, shell_pgid) < 0) 

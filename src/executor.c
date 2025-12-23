@@ -41,6 +41,7 @@ static void update_job_status(pid_t pid, int status)
 // SIGCHLD handler to reap zombie processes and update job status
 void sigchld_handler(int sig)
 {
+    (void)sig;  // Suppress unused parameter warning
     int saved_errno = errno;
     int status;
     pid_t pid;
@@ -54,7 +55,13 @@ void sigchld_handler(int sig)
         update_job_status(pid, status);
     }
     
-    errno = saved_errno;
+    // Only restore errno if no real error occurred
+    // (ECHILD just means no more children, not an error)
+    if (pid == -1 && errno != ECHILD) {
+        // Real error occurred, keep the errno
+    } else {
+        errno = saved_errno;
+    }
 }
 
 // Check for completed jobs and print notifications
@@ -154,7 +161,7 @@ void print_exit_status(int status)
     else if (WIFSIGNALED(status)) 
     {
         int sig = WTERMSIG(status);
-        printf("%s[terminated by signal: %d]%s\n", COLOR_BLUE, sig, COLOR_RESET);
+        printf("%s[terminated by signal: %s]%s\n", COLOR_BLUE, strsignal(sig), COLOR_RESET);
     }
 }
 
