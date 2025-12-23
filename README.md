@@ -8,7 +8,7 @@
 
 TinyShell is an educational Unix shell that implements all core features of a modern command-line interpreter, including command execution, I/O redirection, pipelines and comprehensive job control with signal handling. Built from scratch using POSIX system calls and C.
 
-**[→ Jump to Quick Start](#quick-start)**
+**[> Jump to Quick Start](#quick-start)**
 
 ## Features
 
@@ -117,11 +117,11 @@ The Makefile performs the following steps:
 
 1. **Creates `obj/` directory** - Stores compiled object files
 2. **Compiles source files** - Each `.c` file in `src/` → `.o` file in `obj/`
-   - `src/main.c` → `obj/main.o`
-   - `src/parser.c` → `obj/parser.o`
-   - `src/executor.c` → `obj/executor.o`
-   - `src/builtins.c` → `obj/builtins.o`
-   - `src/utils.c` → `obj/utils.o`
+   - `src/main.c` -> `obj/main.o`
+   - `src/parser.c` -> `obj/parser.o`
+   - `src/executor.c` -> `obj/executor.o`
+   - `src/builtins.c` -> `obj/builtins.o`
+   - `src/utils.c` -> `obj/utils.o`
 3. **Links objects** - Combines all `.o` files into final `tinyshell` executable
 4. **Links libraries** - Adds GNU Readline (`-lreadline`)
 
@@ -387,3 +387,4 @@ Check out the **GitHub Repo** [here](https://github.com/elisavetchatz/UnixShell)
 **Author:** Elisavet Chatzikyrka  
 **Course:** Operating Systems  
 **Date:** December 2025
+
