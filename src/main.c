@@ -19,7 +19,7 @@ int main(void)
     shell_pgid = getpgrp();
     
     // Put shell in its own process group
-    if (setpgid(shell_pgid, shell_pgid) < 0) 
+    if (setpgid(0, shell_pgid) < 0) 
     {
         perror("setpgid");
         exit(1);

@@ -8,6 +8,8 @@
 
 TinyShell is an educational Unix shell that implements all core features of a modern command-line interpreter, including command execution, I/O redirection, pipelines and comprehensive job control with signal handling. Built from scratch using POSIX system calls and C.
 
+**[> Jump to Quick Start](#-quick-start)**
+
 ## Features
 
 TinyShell supports a comprehensive set of shell features across three development phases:
@@ -46,21 +48,14 @@ TinyShell supports a comprehensive set of shell features across three developmen
 - **GCC** compiler and build tools
 - **GNU Readline** library for command history
 
-### Installation (Ubuntu/WSL)
-```bash
-sudo apt update
-sudo apt install -y build-essential libreadline-dev
-```
-
 ## Quick Start
 
-### 1. Clone the repository
+### Navigate to project folder
 ```bash
-git clone https://github.com/elisavetchatz/UnixShell.git
 cd UnixShell
 ```
 
-### 2. Build the shell
+### Build the shell
 ```bash
 make
 ```
@@ -68,14 +63,18 @@ make
 ### 3. Run TinyShell
 ```bash
 ./tinyshell
+
+# or use the shortcut 
+make r
 ```
 
 You should see the prompt:
 ```
 tinyshell:/current/directory>
 ```
+*The prompt appears in <span style="color: cyan;">**cyan**</span> in the actual shell.*
 
-### 4. Try some commands
+### Try some commands
 ```bash
 # Basic command
 tinyshell:~> ls -la
@@ -98,14 +97,19 @@ tinyshell:~> jobs
 tinyshell:~> exit
 ```
 
-## 🔨 Build Commands
+## Build Commands in Makefile
 
 | Command | Description |
 |---------|-------------|
 | `make` | Compile all modules and create `tinyshell` executable |
-| `make clean` | Remove build artifacts (object files and binary) |
-| `make rebuild` | Clean and rebuild from scratch |
+| `make build` | Same as `make` (alias for `all`) |
 | `make run` | Build and immediately run the shell |
+| `make r` | Short alias for `run` |
+| `make clean` | Remove build artifacts (object files and binary) |
+| `make c` | Short alias for `clean` |
+| `make rebuild` | Clean and rebuild from scratch |
+| `make rb` | Short alias for `rebuild` |
+| `make show` | Display build variables (sources, objects, headers) |
 
 ### Build Process Details
 
