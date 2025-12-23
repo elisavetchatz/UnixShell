@@ -59,7 +59,7 @@ void builtin_jobs(void)
 {
     for (int i = 0; i < MAX_JOBS; i++)
     {
-        if (jobs[i].state != JOB_DONE)
+        if (jobs[i].state != JOB_DONE && jobs[i].cmd_line != NULL)
         {
             const char *state_str = (jobs[i].state == JOB_RUNNING) ? "Running" : "Stopped";
             printf("[%d]  %s    %s\n", jobs[i].job_num, state_str, jobs[i].cmd_line);
@@ -120,10 +120,11 @@ void builtin_fg(int argc, char **argv)
     
     // Wait for the job to complete or stop
     // Retry if interrupted by a signal (EINTR)
+    // Use -pgid to wait for any process in the job's process group (handles pipelines)
     int status;
     pid_t result;
     do {
-        result = waitpid(job->pid, &status, WUNTRACED);
+        result = waitpid(-job->pgid, &status, WUNTRACED);
     } while (result == -1 && errno == EINTR);
     
     // Take back terminal control
@@ -145,13 +146,16 @@ void builtin_fg(int argc, char **argv)
         }
         else if (WIFEXITED(status) || WIFSIGNALED(status))
         {
-            // Job completed
+            // Job completed - fully clean up the entry
             job->state = JOB_DONE;
             if (job->cmd_line)
             {
                 free(job->cmd_line);
                 job->cmd_line = NULL;
             }
+            job->job_num = 0;
+            job->pid = 0;
+            job->pgid = 0;
         }
     }
     

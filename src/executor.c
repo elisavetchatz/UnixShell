@@ -74,6 +74,9 @@ void check_job_notifications(void)
             printf("\n[%d]+  Done       %s\n", jobs[i].job_num, jobs[i].cmd_line);
             free(jobs[i].cmd_line);
             jobs[i].cmd_line = NULL;
+            jobs[i].job_num = 0;
+            jobs[i].pid = 0;
+            jobs[i].pgid = 0;
         }
     }
 }
@@ -285,20 +288,19 @@ void execute_pipeline(Command cmds[], int num_cmds)
         
         if (pid == 0) 
         {
-            // Restore SIGINT and SIGTSTP to default
+            // Restore default signal handlers in child
             struct sigaction sa;
             sa.sa_handler = SIG_DFL;
             sigemptyset(&sa.sa_mask);
             sa.sa_flags = 0;
             sigaction(SIGINT, &sa, NULL);
             sigaction(SIGTSTP, &sa, NULL);
+            sigaction(SIGTTIN, &sa, NULL);
+            sigaction(SIGTTOU, &sa, NULL);
 
             // Child process
-            // Create new process group for background jobs
-            if (cmds[0].background) 
-            {
-                setpgid(0, 0);
-            }
+            // Create new process group (both foreground and background)
+            setpgid(0, 0);
             
             setup_redirection(&cmds[0]);
             exec_with_path(cmds[0].argv[0], cmds[0].argv);
@@ -395,13 +397,15 @@ void execute_pipeline(Command cmds[], int num_cmds)
             else
                 setpgid(0, pids[0]);  // Others join the first child's group
             
-            // Restore SIGINT and SIGTSTP to default
+            // Restore default signal handlers in child
             struct sigaction sa;
             sa.sa_handler = SIG_DFL;
             sigemptyset(&sa.sa_mask);
             sa.sa_flags = 0;
             sigaction(SIGINT, &sa, NULL);
             sigaction(SIGTSTP, &sa, NULL);
+            sigaction(SIGTTIN, &sa, NULL);
+            sigaction(SIGTTOU, &sa, NULL);
 
             // Redirect input from previous pipe (if not first command)
             if (i > 0) 
@@ -465,13 +469,57 @@ void execute_pipeline(Command cmds[], int num_cmds)
     } 
     else 
     {
-        // Foreground pipeline - wait for all children
-        int status;
-        for (int i = 0; i < num_cmds; i++) 
+        // Foreground pipeline - give terminal control and wait
+        pid_t pgid = pids[0];
+        
+        // Give terminal control to pipeline
+        if (tcsetpgrp(shell_terminal, pgid) < 0)
         {
-            waitpid(pids[i], &status, 0);
-            if (i == num_cmds - 1)  // Only print status of last command
-                print_exit_status(status);
+            perror("tcsetpgrp");
+        }
+        
+        // Wait for the entire process group
+        // Use -pgid to wait for any process in the pipeline
+        int status;
+        pid_t result;
+        int num_finished = 0;
+        
+        while (num_finished < num_cmds)
+        {
+            result = waitpid(-pgid, &status, WUNTRACED);
+            
+            if (result < 0)
+                break;  // Error occurred
+            
+            if (WIFSTOPPED(status))
+            {
+                // Pipeline was stopped - create job
+                char cmd_str[256] = "";
+                for (int j = 0; j < num_cmds && strlen(cmd_str) < 200; j++) 
+                {
+                    if (j > 0) strncat(cmd_str, " | ", sizeof(cmd_str) - strlen(cmd_str) - 1);
+                    strncat(cmd_str, cmds[j].argv[0], sizeof(cmd_str) - strlen(cmd_str) - 1);
+                }
+                int job_num = add_job(pids[num_cmds - 1], pgid, cmd_str);
+                jobs[job_num - 1].state = JOB_STOPPED;
+                printf("\n[%d]+  Stopped    %s\n", job_num, cmd_str);
+                break;  // Exit wait loop
+            }
+            else if (WIFEXITED(status) || WIFSIGNALED(status))
+            {
+                num_finished++;
+                if (num_finished == num_cmds)
+                {
+                    // Last process finished - print status
+                    print_exit_status(status);
+                }
+            }
+        }
+        
+        // Return terminal control to shell
+        if (tcsetpgrp(shell_terminal, shell_pgid) < 0)
+        {
+            perror("tcsetpgrp");
         }
     }
 }
